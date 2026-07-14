@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
-import { GoogleGenAI, Type } from "@google/genai";
 import { motion, AnimatePresence } from "framer-motion";
 
 // --- Tipos y Datos de Enlaces Médicos ---
@@ -116,84 +115,14 @@ const CredentialItem = ({ label, value }: { label: string; value: string }) => {
 };
 
 const App = () => {
-  const [query, setQuery] = useState('');
   const [filteredIds, setFilteredIds] = useState<string[]>(MEDICAL_LINKS.map(l => l.id));
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [isAiLoading, setIsAiLoading] = useState(false);
   const [showSubLinks, setShowSubLinks] = useState(false);
   const [activeTab, setActiveTab] = useState<'links' | 'credentials' | 'support'>('links');
 
   const categories: CategoryType[] = ['Asistenciales', 'Operativos', 'Capacitación', 'Soporte'];
 
-  const handleSearch = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setActiveCategory(null);
-    
-    if (!query.trim()) {
-      setFilteredIds(MEDICAL_LINKS.map(l => l.id));
-      return;
-    }
-
-    setIsAiLoading(true);
-    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-    
-    if (!apiKey) {
-      console.warn("API Key no configurada. Usando búsqueda local.");
-      const localResults = MEDICAL_LINKS.filter(l => 
-        l.name.toLowerCase().includes(query.toLowerCase()) || 
-        l.description.toLowerCase().includes(query.toLowerCase())
-      ).map(l => l.id);
-      setFilteredIds(localResults);
-      setIsAiLoading(false);
-      return;
-    }
-
-    const ai = new GoogleGenAI({ apiKey });
-
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Eres un asistente experto para médicos en la IPS Viva1A. 
-        Analiza la intención del usuario: "${query}". 
-        Debes filtrar los siguientes enlaces y devolver ÚNICAMENTE un array JSON con los IDs de los enlaces que coincidan semánticamente con la búsqueda.
-        
-        Enlaces disponibles: ${JSON.stringify(MEDICAL_LINKS.map(l => ({ id: l.id, name: l.name, description: l.description, keywords: l.keywords })))}`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: { 
-            type: Type.ARRAY, 
-            items: { type: Type.STRING } 
-          }
-        }
-      });
-      
-      const resultText = response.text || '[]';
-      const resultIds = JSON.parse(resultText);
-      
-      if (Array.isArray(resultIds) && resultIds.length > 0) {
-        setFilteredIds(resultIds);
-      } else {
-        const fallback = MEDICAL_LINKS.filter(l => 
-          l.name.toLowerCase().includes(query.toLowerCase()) || 
-          l.description.toLowerCase().includes(query.toLowerCase()) ||
-          l.keywords.some(k => k.toLowerCase().includes(query.toLowerCase()))
-        ).map(l => l.id);
-        setFilteredIds(fallback);
-      }
-    } catch (err) {
-      console.error("Error en búsqueda IA:", err);
-      const localResults = MEDICAL_LINKS.filter(l => 
-        l.name.toLowerCase().includes(query.toLowerCase()) || 
-        l.description.toLowerCase().includes(query.toLowerCase())
-      ).map(l => l.id);
-      setFilteredIds(localResults);
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
   const handleCategoryClick = (cat: string | null) => {
-    setQuery('');
     if (activeCategory === cat) {
       setActiveCategory(null);
       setFilteredIds(MEDICAL_LINKS.map(l => l.id));
@@ -210,12 +139,12 @@ const App = () => {
   const displayedLinks = useMemo(() => {
     const unfiltered = MEDICAL_LINKS.filter(l => filteredIds.includes(l.id));
     // If we are showing the featured card, exclude it from the grid to prevent duplication
-    const showFeatured = (activeCategory === null || activeCategory === 'Asistenciales') && !query;
+    const showFeatured = activeCategory === null || activeCategory === 'Asistenciales';
     if (showFeatured) {
       return unfiltered.filter(l => l.id !== 'historias_extramural');
     }
     return unfiltered;
-  }, [filteredIds, activeCategory, query]);
+  }, [filteredIds, activeCategory]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col relative overflow-hidden">
@@ -225,65 +154,33 @@ const App = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[35%] h-[35%] bg-sky-50 rounded-full blur-[100px] opacity-35"></div>
       </div>
 
-      <nav className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-6 py-4 shadow-sm">
-        <div className="max-w-[1900px] mx-auto flex flex-col xl:flex-row items-center justify-between gap-6">
+      <nav className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-4 py-2.5 shadow-sm">
+        <div className="max-w-[1900px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           
-          <div className="flex flex-wrap items-center gap-6 shrink-0 w-full xl:w-auto justify-between md:justify-start">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4 shrink-0 justify-between w-full sm:w-auto">
+            <div className="flex items-center gap-2.5">
               <motion.div 
-                whileHover={{ scale: 1.1, rotate: 10 }}
-                className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-100"
+                whileHover={{ scale: 1.05 }}
+                className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-lg flex items-center justify-center text-white"
               >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
               </motion.div>
-              <h1 className="text-xl font-black tracking-tight text-slate-800 uppercase heading-font">VIVA1A <span className="text-emerald-600">EXTRAMURAL</span></h1>
+              <h1 className="text-sm font-black tracking-tight text-slate-800 uppercase heading-font">VIVA1A <span className="text-emerald-600">EXTRAMURAL</span></h1>
             </div>
 
-            <div className="px-3.5 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-wider rounded-full border border-emerald-100 flex items-center gap-1.5 shadow-sm">
-              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            <div className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-wider rounded-full border border-emerald-100 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
               MODO TABLETA
             </div>
-
-            <form onSubmit={handleSearch} className="relative group flex-1 md:flex-none md:w-[350px]">
-              <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-teal-600 rounded-xl blur ${isAiLoading ? 'opacity-50' : 'opacity-10'} group-focus-within:opacity-25 transition duration-500`}></div>
-              <div className={`relative flex items-center bg-slate-100 border border-slate-200 rounded-xl p-0.5 transition-all focus-within:bg-white focus-within:border-emerald-500 ${isAiLoading ? 'cursor-wait' : ''}`}>
-                <div className="pl-3 text-slate-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                </div>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="¿Qué necesitas buscar? (ej: historia)"
-                  className="w-full bg-transparent px-2 py-2 outline-none text-slate-700 text-sm font-semibold placeholder:text-slate-400"
-                />
-                <button 
-                  type="submit" 
-                  disabled={isAiLoading}
-                  className={`relative flex items-center gap-2 overflow-hidden px-4 py-2 rounded-lg font-bold transition-all text-[11px] active:scale-95 disabled:opacity-70 ${isAiLoading ? 'bg-slate-200 text-slate-400' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
-                >
-                  {isAiLoading ? (
-                    <motion.div 
-                      animate={{ rotate: 360 }} 
-                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                      className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full"
-                    />
-                  ) : (
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
-                  )}
-                  <span>IA</span>
-                </button>
-              </div>
-            </form>
           </div>
 
           {/* Categories bar - visible only when Links tab is active */}
           {activeTab === 'links' && (
-            <div className="bg-slate-100 p-1 rounded-2xl flex items-center shadow-inner overflow-x-auto no-scrollbar max-w-full">
+            <div className="bg-slate-100 p-0.5 rounded-xl flex items-center shadow-inner overflow-x-auto no-scrollbar max-w-full">
               <button
                 onClick={() => handleCategoryClick(null)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-300 font-bold text-xs whitespace-nowrap ${
-                  activeCategory === null ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500 hover:bg-white/50'
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] transition-all duration-300 font-bold text-[10px] whitespace-nowrap ${
+                  activeCategory === null ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white/50'
                 }`}
               >
                 <CategoryIcon type="Todos" active={activeCategory === null} />
@@ -293,8 +190,8 @@ const App = () => {
                 <button
                   key={cat}
                   onClick={() => handleCategoryClick(cat)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-[12px] transition-all duration-300 font-bold text-xs whitespace-nowrap ${
-                    activeCategory === cat ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-500 hover:bg-white/50'
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] transition-all duration-300 font-bold text-[10px] whitespace-nowrap ${
+                    activeCategory === cat ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white/50'
                   }`}
                 >
                   <CategoryIcon type={cat} active={activeCategory === cat} />
@@ -304,45 +201,45 @@ const App = () => {
             </div>
           )}
 
-          <div className="hidden xl:flex items-center gap-4 shrink-0">
-             <div className="px-4 py-1.5 bg-emerald-50 rounded-full text-[10px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100 flex items-center gap-2">
-               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <div className="hidden md:flex items-center gap-3 shrink-0">
+             <div className="px-3 py-1 bg-emerald-50 rounded-full text-[9px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
+               <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                MEDICOS CRA80
              </div>
           </div>
         </div>
       </nav>
 
-      <div className="flex-1 max-w-[1700px] mx-auto w-full p-4 md:p-8 flex flex-col relative z-10">
+      <div className="flex-1 max-w-[1700px] mx-auto w-full p-4 md:p-6 flex flex-col relative z-10">
         
         {/* Tablet Top Helper Box */}
-        <div className="mb-8 flex flex-col md:flex-row items-center justify-between gap-4 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-2xl flex items-center justify-center text-white text-xl shadow-md">
+        <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-3 bg-white border border-slate-200 rounded-2xl p-4 md:p-5 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-xl flex items-center justify-center text-white text-lg shadow-md shrink-0">
               📱
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-900 heading-font uppercase">
+              <h2 className="text-lg font-black text-slate-900 heading-font uppercase">
                 Panel Extramural <span className="text-emerald-600">CRA 80</span>
               </h2>
-              <p className="text-xs md:text-sm text-slate-500 font-bold leading-relaxed">
+              <p className="text-xs text-slate-500 font-bold leading-relaxed">
                 Diseño optimizado para tablets con botones grandes y accesos directos de alta prioridad en campo.
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1 bg-sky-50 text-sky-700 text-[10px] font-black rounded-full border border-sky-100">CRA 80</span>
-            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-full border border-indigo-100">IPS VIVA1A</span>
+          <div className="flex flex-wrap gap-1.5">
+            <span className="px-2.5 py-0.5 bg-sky-50 text-sky-700 text-[9px] font-black rounded-full border border-sky-100">CRA 80</span>
+            <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-black rounded-full border border-indigo-100">IPS VIVA1A</span>
           </div>
         </div>
 
         {/* Tab Selector for Tablet ergonomics */}
-        <div className="flex bg-slate-200/60 p-1 rounded-2xl border border-slate-200/80 shadow-inner w-full max-w-xl mx-auto mb-8">
+        <div className="flex bg-slate-200/60 p-1 rounded-xl border border-slate-200/80 shadow-inner w-full max-w-lg mx-auto mb-6">
           <button
             onClick={() => setActiveTab('links')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-300 ${
               activeTab === 'links'
-                ? 'bg-emerald-600 text-white shadow-lg'
+                ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
             }`}
           >
@@ -350,9 +247,9 @@ const App = () => {
           </button>
           <button
             onClick={() => setActiveTab('credentials')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-300 ${
               activeTab === 'credentials'
-                ? 'bg-emerald-600 text-white shadow-lg'
+                ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
             }`}
           >
@@ -360,9 +257,9 @@ const App = () => {
           </button>
           <button
             onClick={() => setActiveTab('support')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3.5 px-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-300 ${
               activeTab === 'support'
-                ? 'bg-emerald-600 text-white shadow-lg'
+                ? 'bg-emerald-600 text-white shadow-md'
                 : 'text-slate-600 hover:bg-white/50 hover:text-slate-900'
             }`}
           >
@@ -382,44 +279,39 @@ const App = () => {
                 transition={{ duration: 0.2 }}
               >
                 {/* Banner Destacado para Extramural (Formato Historias Extramural) */}
-                {((activeCategory === null || activeCategory === 'Asistenciales') && !query) && (
+                {(activeCategory === null || activeCategory === 'Asistenciales') && (
                   <motion.div
-                    initial={{ opacity: 0, y: -20 }}
+                    initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-8 overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-sky-700 p-8 md:p-10 rounded-[2.5rem] shadow-lg relative text-white group"
+                    className="mb-6 overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 p-5 md:p-6 rounded-2xl shadow-md relative text-white group"
                   >
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
-                    <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-emerald-500/30 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="absolute top-0 right-0 w-60 h-60 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-xl pointer-events-none"></div>
 
-                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      <div className="space-y-4 max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest border border-white/15">
-                          <span className="w-2 h-2 bg-emerald-300 rounded-full animate-pulse shadow-sm"></span>
+                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                      <div className="space-y-2 max-w-3xl">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">
+                          <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse shadow-sm"></span>
                           HERRAMIENTA PRINCIPAL EXTRAMURAL
                         </div>
-                        <h3 className="text-3xl md:text-4xl font-black heading-font tracking-tight uppercase">
+                        <h3 className="text-xl md:text-2xl font-black heading-font tracking-tight uppercase">
                           Formato Historias Extramural
                         </h3>
-                        <p className="text-white/95 text-sm md:text-base font-semibold leading-relaxed">
+                        <p className="text-white/90 text-xs md:text-sm font-semibold leading-relaxed">
                           Accede directamente a la carpeta oficial con todas las plantillas y formatos para el diligenciamiento de historias clínicas en campo. ¡Descarga las plantillas a tu tablet antes de salir para trabajar de forma óptima!
                         </p>
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          <span className="text-[10px] bg-black/15 px-3 py-1 rounded-full font-black uppercase tracking-wider">#TabletOptimized</span>
-                          <span className="text-[10px] bg-black/15 px-3 py-1 rounded-full font-black uppercase tracking-wider">#OfflineReady</span>
-                          <span className="text-[10px] bg-black/15 px-3 py-1 rounded-full font-black uppercase tracking-wider">#Extramural</span>
-                        </div>
                       </div>
 
                       <motion.a
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         href="https://drive.google.com/drive/folders/16MD1-slKi22meenPeQNiSlo7_2I5ZtPP?usp=sharing"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="shrink-0 bg-white hover:bg-emerald-50 text-emerald-800 font-black text-xs uppercase tracking-wider px-8 py-5 rounded-[2rem] shadow-xl shadow-emerald-950/20 flex items-center justify-center gap-3 self-start lg:self-center"
+                        className="shrink-0 bg-white hover:bg-emerald-50 text-emerald-800 font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 self-start lg:self-center"
                       >
-                        <span>Abrir Carpeta de Formatos</span>
-                        <svg className="w-5 h-5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <span>Abrir Formatos</span>
+                        <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                         </svg>
                       </motion.a>
@@ -440,7 +332,7 @@ const App = () => {
                     {displayedLinks.length > 0 ? (
                       <motion.div
                         layout
-                        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"
+                        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4"
                       >
                         {displayedLinks.map((link, idx) => {
                           const isSpecial = link.id === 'reporte_inseguro';
@@ -457,25 +349,25 @@ const App = () => {
                               exit={{ opacity: 0, scale: 0.8 }}
                               transition={{ delay: idx * 0.04, type: 'spring', damping: 22 }}
                               whileHover={{ y: -5, boxShadow: "0 15px 30px -8px rgba(16, 185, 129, 0.12)" }}
-                              className="group relative overflow-hidden bg-white border border-slate-200 p-5 md:p-6 rounded-[1.5rem] shadow-sm hover:border-emerald-200 flex flex-col min-h-[210px] cursor-pointer"
+                              className="group relative overflow-hidden bg-white border border-slate-200 p-4 md:p-5 rounded-[1.25rem] shadow-sm hover:border-emerald-200 flex flex-col min-h-[170px] cursor-pointer"
                             >
-                              <div className={`absolute inset-y-0 left-0 w-2 ${getCatBg(link.category)} opacity-10 group-hover:opacity-100 transition-all duration-500`}></div>
-                              <div className="flex items-start justify-between mb-4">
-                                <div className={`p-3 rounded-xl ${getCatIconBgClass(link.category)} transition-all transform group-hover:scale-110`}>
+                              <div className={`absolute inset-y-0 left-0 w-1.5 ${getCatBg(link.category)} opacity-10 group-hover:opacity-100 transition-all duration-500`}></div>
+                              <div className="flex items-start justify-between mb-3">
+                                <div className={`p-2 rounded-xl ${getCatIconBgClass(link.category)} transition-all transform group-hover:scale-110`}>
                                   <LinkIcon id={link.id} category={link.category} />
                                 </div>
-                                <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:translate-x-1 group-hover:-translate-y-1 shadow-inner">
-                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                <div className="w-7 h-7 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all transform group-hover:translate-x-1 group-hover:-translate-y-1 shadow-inner">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </div>
                               </div>
-                              <div className="space-y-2 flex-1">
-                                <h4 className="text-base font-black text-slate-800 tracking-tight group-hover:text-emerald-600 uppercase transition-colors line-clamp-2">
+                              <div className="space-y-1.5 flex-1">
+                                <h4 className="text-xs md:text-sm font-black text-slate-800 tracking-tight group-hover:text-emerald-600 uppercase transition-colors line-clamp-2">
                                   {link.name}
                                 </h4>
-                                <p className="text-xs text-slate-500 leading-relaxed font-semibold line-clamp-3">{link.description}</p>
+                                <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed font-semibold line-clamp-3">{link.description}</p>
                               </div>
-                              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                                <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${getCatPillClass(link.category)} transition-all duration-300`}>
+                              <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+                                <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getCatPillClass(link.category)} transition-all duration-300`}>
                                   {link.category}
                                 </span>
                                 <div className="flex gap-1">
@@ -767,7 +659,7 @@ const getCatPillClass = (cat: CategoryType) => {
 };
 
 const CategoryIcon = ({ type, active, large }: { type: CategoryType | 'Todos', active?: boolean, large?: boolean }) => {
-  const size = large ? "w-8 h-8" : "w-5 h-5";
+  const size = large ? "w-6 h-6" : "w-4 h-4";
   
   const getIconColor = () => {
     if (active) return "text-white";
