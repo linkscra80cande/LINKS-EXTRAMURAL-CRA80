@@ -17,6 +17,7 @@ interface MedicalLink {
 
 const MEDICAL_LINKS: MedicalLink[] = [
   { id: 'everest_3', name: 'EVEREST 3.0', url: 'https://cloud.tg6.everestintelligent.com.co/viva/EverHealth/auth/login', category: 'Asistenciales', description: 'Nueva versión 3.0 del portal de gestión de salud EverHealth.', keywords: ['historia clinica', 'pacientes', 'portal', 'everest 3.0'] },
+  { id: 'soma', name: 'SOMA', url: 'https://centralaplicaciones.sos.com.co/ValidadorWeb2/Logueo/login.jsf', category: 'Asistenciales', description: 'Validador web de aplicaciones SOS y consulta de datos.', keywords: ['soma', 'sos', 'validador', 'central aplicaciones'] },
   { id: 'firmar_consentimiento', name: 'FIRMAR CONSENTIMIENTO', url: 'https://cloud.tg6.everestintelligent.com.co/viva/cisign-paciente/', category: 'Asistenciales', description: 'Firmar consentimiento del paciente en la plataforma de firmas.', keywords: ['firma', 'consentimiento', 'paciente', 'everest'] },
   { id: 'solicitar_consentimiento', name: 'SOLICITAR CONSENTIMIENTO', url: 'https://cloud.tg6.everestintelligent.com.co/viva/cisign/', category: 'Asistenciales', description: 'Solicitud de consentimientos informados en la plataforma.', keywords: ['consentimiento', 'solicitar', 'firma', 'everest'] },
   { id: 'pana', name: 'NUEVA EPS CONTRIBUTIVO', url: 'https://neps.everestintelligent.com/viva/EverHealth/auth/login', category: 'Asistenciales', description: 'Sistema de gestión Nueva EPS.', keywords: ['nueva eps', 'afiliados'] },
@@ -719,6 +720,12 @@ const LinkIcon = ({ id, category, large }: { id: string; category: CategoryType;
         <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 21l9-14 9 14" />
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 15h2l1-2 1.5 4 1-2.5h2" />
+        </svg>
+      );
+    case 'soma':
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
         </svg>
       );
     case 'firmar_consentimiento':
