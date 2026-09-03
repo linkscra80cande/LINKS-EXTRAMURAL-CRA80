@@ -27,7 +27,7 @@ const MEDICAL_LINKS: MedicalLink[] = [
   { id: 'annarlytics', name: 'ANNARLYTICS', url: 'http://datacare.viva1a.com.co/datacare/#nbb', category: 'Asistenciales', description: 'Resultados de laboratorio clínico centralizado.', keywords: ['laboratorio', 'examenes', 'sangre', 'resultados'] },
   { id: 'athenea', name: 'ATHENEA', url: 'https://medicosviva1a.atheneasoluciones.com/', category: 'Asistenciales', description: 'Sistema alterno de resultados médicos.', keywords: ['resultados', 'consulta'] },
   { id: 'agenda_lab', name: 'AGENDA LABORATORIOS', url: 'https://appcita.viva1a.com.co:8051/laboratorio/agente', category: 'Operativos', description: 'Programación de citas para toma de muestras.', keywords: ['citas', 'agenda', 'muestras'] },
-  { id: 'glpi', name: 'MESA DE SERVICIO (GLPI)', url: 'http://mesadeservicios.viva1a.com.co/glpi/index.php', category: 'Soporte', description: 'Reporte de fallas técnicas y soporte IT.', keywords: ['soporte', 'tecnico', 'computador', 'daño', 'ticket'] },
+  { id: 'glpi', name: 'MESA DE SERVICIO (GLPI)', url: 'https://orbit.csc1a.com/glpi/index.php?noAUTO=1', category: 'Soporte', description: 'Nueva plataforma CSC. Reporte de fallas técnicas y soporte IT.', keywords: ['soporte', 'glpi', 'csc', 'mesa de servicio', 'ticket', 'cra80'] },
   { id: 'viva_aprendiendo', name: 'VIVA APRENDIENDO', url: 'http://vivaaprendiendo.com.co/', category: 'Capacitación', description: 'Plataforma de capacitación continua.', keywords: ['cursos', 'capacitacion', 'aprender'] },
   { id: 'mi_portal', name: 'MI PORTAL GH', url: 'https://www.miportalgh.com/', category: 'Operativos', description: 'Gestión humana y desprendibles de nómina.', keywords: ['nomina', 'vacaciones', 'talento humano'] },
   { id: 'poblacion_utp', name: 'POBLACION UTP', url: 'https://drive.google.com/drive/folders/1W1cNCvtEbp3Muk5BpISm40qyxvEHox9C?usp=drive_link', category: 'Asistenciales', description: 'Base de datos población Universidad Tecnológica.', keywords: ['utp', 'estudiantes', 'docentes'] },
@@ -115,37 +115,284 @@ const CredentialItem = ({ label, value }: { label: string; value: string }) => {
   );
 };
 
-const App = () => {
-  const [filteredIds, setFilteredIds] = useState<string[]>(MEDICAL_LINKS.map(l => l.id));
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [showSubLinks, setShowSubLinks] = useState(false);
-  const [activeTab, setActiveTab] = useState<'links' | 'credentials' | 'support'>('links');
+const GlpiInstructivoModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [copiedUser, setCopiedUser] = useState(false);
+  const [copiedPass, setCopiedPass] = useState(false);
 
-  const categories: CategoryType[] = ['Asistenciales', 'Operativos', 'Capacitación', 'Soporte'];
-
-  const handleCategoryClick = (cat: string | null) => {
-    if (activeCategory === cat) {
-      setActiveCategory(null);
-      setFilteredIds(MEDICAL_LINKS.map(l => l.id));
+  const copyText = (text: string, isUser: boolean) => {
+    navigator.clipboard.writeText(text);
+    if (isUser) {
+      setCopiedUser(true);
+      setTimeout(() => setCopiedUser(false), 2000);
     } else {
-      setActiveCategory(cat);
-      if (cat === null) {
-        setFilteredIds(MEDICAL_LINKS.map(l => l.id));
-      } else {
-        setFilteredIds(MEDICAL_LINKS.filter(l => l.category === cat).map(l => l.id));
-      }
+      setCopiedPass(true);
+      setTimeout(() => setCopiedPass(false), 2000);
     }
   };
 
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-slate-900/70 backdrop-blur-md"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative bg-white rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] z-10"
+      >
+        {/* Modal Header */}
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 text-white border-b border-indigo-900/50 flex items-start justify-between">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 text-sky-400 flex items-center justify-center text-2xl shadow-inner border border-white/10 shrink-0">
+              🖥️
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-black text-sky-300 uppercase tracking-widest bg-sky-500/20 px-2.5 py-0.5 rounded-full border border-sky-400/30">
+                  Nueva Plataforma CSC
+                </span>
+                <span className="text-[10px] font-mono text-slate-300">GLPI</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight uppercase mt-1 heading-font">
+                Instructivo Mesa de Servicio
+              </h3>
+              <p className="text-xs text-slate-300 font-semibold">
+                Guía paso a paso para radicar tickets y novedades técnicas en Carrera 80
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white shadow-sm border border-white/10 transition-all active:scale-95 shrink-0"
+            title="Cerrar instructivo"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Modal Body - Scrollable */}
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-5 custom-scrollbar text-slate-800">
+          
+          {/* Quick Access Credentials Banner */}
+          <div className="bg-gradient-to-br from-indigo-50 to-sky-50 rounded-2xl p-4 border border-indigo-100/80 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-700">Acceso Directo</span>
+                <h4 className="text-sm font-black text-slate-800 uppercase">Credenciales Institucionales</h4>
+              </div>
+              <a
+                href="https://orbit.csc1a.com/glpi/index.php?noAUTO=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all active:scale-95"
+              >
+                <span>Abrir Plataforma GLPI</span>
+                <svg className="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </a>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Usuario */}
+              <div className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Usuario</span>
+                  <span className="font-mono font-bold text-slate-800 text-sm">medicos.cra80</span>
+                </div>
+                <button
+                  onClick={() => copyText('medicos.cra80', true)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                    copiedUser ? 'bg-emerald-500 text-white' : 'bg-slate-100 hover:bg-indigo-100 text-indigo-700'
+                  }`}
+                >
+                  {copiedUser ? '¡Copiado!' : 'Copiar'}
+                </button>
+              </div>
+
+              {/* Contraseña */}
+              <div className="bg-white p-3 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Contraseña</span>
+                  <span className="font-mono font-bold text-slate-800 text-sm">VIVA2026</span>
+                </div>
+                <button
+                  onClick={() => copyText('VIVA2026', false)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                    copiedPass ? 'bg-emerald-500 text-white' : 'bg-slate-100 hover:bg-indigo-100 text-indigo-700'
+                  }`}
+                >
+                  {copiedPass ? '¡Copiado!' : 'Copiar'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Pasos de radicación */}
+          <div className="space-y-4">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Pasos para Radicar un Caso
+            </h4>
+
+            {/* Paso 1 */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex gap-3.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                1
+              </div>
+              <div className="space-y-1 flex-1">
+                <h5 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                  Ingreso a la mesa de servicio
+                </h5>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Accede al enlace institucional (<span className="text-indigo-600 font-mono font-bold">https://orbit.csc1a.com/glpi/index.php?noAUTO=1</span>) y escribe tu usuario <strong className="font-mono text-slate-800">medicos.cra80</strong> y contraseña <strong className="font-mono text-slate-800">VIVA2026</strong>.
+                </p>
+              </div>
+            </div>
+
+            {/* Paso 2 */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex gap-3.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                2
+              </div>
+              <div className="space-y-1 flex-1">
+                <h5 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                  Crear el caso
+                </h5>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  En el menú superior de la plataforma GLPI, haz clic en el botón <strong className="text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded font-bold">+ Agregar</strong> para abrir el formulario de radicación de caso nuevo.
+                </p>
+              </div>
+            </div>
+
+            {/* Paso 3 */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex gap-3.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                3
+              </div>
+              <div className="space-y-2.5 flex-1">
+                <h5 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                  Diligenciar el formulario del caso
+                </h5>
+                <p className="text-xs text-slate-600 font-medium">
+                  Completa cada uno de los campos siguiendo estos lineamientos:
+                </p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="font-bold text-indigo-700 block mb-0.5">a) Título:</span>
+                    <span className="text-slate-600">Nombre corto que resuma la novedad o fallo presentado.</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="font-bold text-indigo-700 block mb-0.5">b) Descripción:</span>
+                    <span className="text-slate-600">Explica detalladamente qué sucedió y en qué área o servicio se presenta.</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="font-bold text-indigo-700 block mb-0.5">c) Entidad:</span>
+                    <span className="text-slate-600">Ya viene seleccionada como <strong className="font-semibold text-slate-800">"TECNOLOGIA"</strong> por defecto (no es necesario cambiarla).</span>
+                  </div>
+                  <div className="bg-white p-2.5 rounded-xl border border-slate-200">
+                    <span className="font-bold text-indigo-700 block mb-0.5">e) Localización:</span>
+                    <span className="text-slate-600">Escribe <strong className="bg-amber-100 text-amber-900 px-1 rounded font-bold">"80"</strong> en el buscador y selecciona estrictamente <strong className="text-emerald-700 font-bold">CARRERA 80</strong>.</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-3 rounded-xl border border-slate-200">
+                  <span className="font-bold text-indigo-700 text-xs block mb-1">d) Categoría:</span>
+                  <p className="text-xs text-slate-600 mb-2">
+                    Escribe <strong className="bg-indigo-100 text-indigo-900 px-1 rounded font-bold">"soporte"</strong>. El sistema desplegará 5 opciones bajo <em>Soporte Técnico</em>. Selecciona la correspondiente:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px] font-medium text-slate-700">
+                    <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                      ⚙️ Configuración De Equipo
+                    </span>
+                    <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                      💻 Instalación De Software
+                    </span>
+                    <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                      🔧 Mantenimiento Correctivo
+                    </span>
+                    <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded border border-slate-100">
+                      🛡️ Mantenimiento Preventivo
+                    </span>
+                    <span className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded border border-slate-100 sm:col-span-2">
+                      🔑 Problema De Acceso
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Paso 4 */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200 flex gap-3.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+                4
+              </div>
+              <div className="space-y-1 flex-1">
+                <h5 className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                  Finalizar y radicar
+                </h5>
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                  Verifica que Entidad, Categoría y Localización estén debidamente diligenciados y haz clic en el botón amarillo <strong className="bg-amber-400 text-slate-900 px-2 py-0.5 rounded font-bold">+ Agregar</strong> para radicar el caso.
+                </p>
+                <div className="mt-2 p-2 bg-emerald-50 text-emerald-800 text-xs rounded-lg border border-emerald-200 font-medium flex items-center gap-2">
+                  <span className="text-emerald-600 font-bold">✓</span>
+                  <span>Si el proceso fue exitoso, el caso quedará visible en la sección <strong>"Tickets"</strong> del menú superior.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="p-4 sm:p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Soporte Oficial Viva1A IPS • CRA 80
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={onClose}
+              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-200 transition-colors"
+            >
+              Cerrar
+            </button>
+            <a
+              href="https://orbit.csc1a.com/glpi/index.php?noAUTO=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-md transition-colors flex items-center justify-center gap-1.5"
+            >
+              <span>Ir a Mesa de Servicio</span>
+              <svg className="w-3.5 h-3.5 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [showSubLinks, setShowSubLinks] = useState(false);
+  const [showGlpiGuide, setShowGlpiGuide] = useState(false);
+  const [activeTab, setActiveTab] = useState<'links' | 'credentials' | 'support'>('links');
+
   const displayedLinks = useMemo(() => {
-    const unfiltered = MEDICAL_LINKS.filter(l => filteredIds.includes(l.id));
-    // If we are showing the featured card, exclude it from the grid to prevent duplication
-    const showFeatured = activeCategory === null || activeCategory === 'Asistenciales';
-    if (showFeatured) {
-      return unfiltered.filter(l => l.id !== 'historias_extramural');
-    }
-    return unfiltered;
-  }, [filteredIds, activeCategory]);
+    // Exclude historias_extramural from the grid because it has a dedicated top hero card
+    return MEDICAL_LINKS.filter(l => l.id !== 'historias_extramural');
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col relative overflow-hidden">
@@ -156,13 +403,13 @@ const App = () => {
       </div>
 
       <nav className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-4 py-2.5 shadow-sm">
-        <div className="max-w-[1900px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-[1900px] mx-auto flex items-center justify-between gap-4">
           
-          <div className="flex items-center gap-4 shrink-0 justify-between w-full sm:w-auto">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5">
               <motion.div 
                 whileHover={{ scale: 1.05 }}
-                className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-lg flex items-center justify-center text-white"
+                className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-700 rounded-lg flex items-center justify-center text-white shadow-sm"
               >
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
               </motion.div>
@@ -175,38 +422,19 @@ const App = () => {
             </div>
           </div>
 
-          {/* Categories bar - visible only when Links tab is active */}
-          {activeTab === 'links' && (
-            <div className="bg-slate-100 p-0.5 rounded-xl flex items-center shadow-inner overflow-x-auto no-scrollbar max-w-full">
-              <button
-                onClick={() => handleCategoryClick(null)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] transition-all duration-300 font-bold text-[10px] whitespace-nowrap ${
-                  activeCategory === null ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white/50'
-                }`}
-              >
-                <CategoryIcon type="Todos" active={activeCategory === null} />
-                <span>Todos</span>
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => handleCategoryClick(cat)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] transition-all duration-300 font-bold text-[10px] whitespace-nowrap ${
-                    activeCategory === cat ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:bg-white/50'
-                  }`}
-                >
-                  <CategoryIcon type={cat} active={activeCategory === cat} />
-                  <span>{cat}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setShowGlpiGuide(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black uppercase tracking-wider rounded-xl border border-indigo-200 shadow-sm transition-all active:scale-95"
+            >
+              <span>📋 Instructivo GLPI</span>
+            </button>
 
-          <div className="hidden md:flex items-center gap-3 shrink-0">
-             <div className="px-3 py-1 bg-emerald-50 rounded-full text-[9px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
-               <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-               MEDICOS CRA80
-             </div>
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 rounded-full text-[9px] font-black text-emerald-600 uppercase tracking-widest border border-emerald-100">
+              <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              MEDICOS CRA80
+            </div>
           </div>
         </div>
       </nav>
@@ -279,53 +507,114 @@ const App = () => {
                 exit={{ opacity: 0, y: -15 }}
                 transition={{ duration: 0.2 }}
               >
-                {/* Banner Destacado para Extramural (Formato Historias Extramural) */}
-                {(activeCategory === null || activeCategory === 'Asistenciales') && (
+                {/* Banners Destacados para Extramural */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                  {/* Banner 1: Formato Historias Extramural */}
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mb-6 overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 p-5 md:p-6 rounded-2xl shadow-md relative text-white group"
+                    className="overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 p-5 md:p-6 rounded-2xl shadow-md relative text-white group flex flex-col justify-between"
                   >
                     <div className="absolute top-0 right-0 w-60 h-60 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
                     <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-emerald-500/20 rounded-full blur-xl pointer-events-none"></div>
 
-                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      <div className="space-y-2 max-w-3xl">
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">
-                          <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse shadow-sm"></span>
-                          HERRAMIENTA PRINCIPAL EXTRAMURAL
-                        </div>
-                        <h3 className="text-xl md:text-2xl font-black heading-font tracking-tight uppercase">
-                          Formato Historias Extramural
-                        </h3>
-                        <p className="text-white/90 text-xs md:text-sm font-semibold leading-relaxed">
-                          Accede directamente a la carpeta oficial con todas las plantillas y formatos para el diligenciamiento de historias clínicas en campo. ¡Descarga las plantillas a tu tablet antes de salir para trabajar de forma óptima!
-                        </p>
+                    <div className="relative z-10 space-y-2 mb-4">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest border border-white/10">
+                        <span className="w-1.5 h-1.5 bg-emerald-300 rounded-full animate-pulse shadow-sm"></span>
+                        FORMATOS EN CAMPO
                       </div>
+                      <h3 className="text-lg md:text-xl font-black heading-font tracking-tight uppercase">
+                        Formato Historias Extramural
+                      </h3>
+                      <p className="text-white/90 text-xs font-semibold leading-relaxed">
+                        Carpeta oficial con plantillas y formatos para diligenciamiento de historias clínicas en campo desde tu tablet.
+                      </p>
+                    </div>
 
+                    <motion.a
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      href="https://drive.google.com/drive/folders/16MD1-slKi22meenPeQNiSlo7_2I5ZtPP?usp=sharing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative z-10 bg-white hover:bg-emerald-50 text-emerald-800 font-black text-xs uppercase tracking-wider px-5 py-3 rounded-xl shadow-md flex items-center justify-center gap-2 self-start transition-all"
+                    >
+                      <span>Abrir Formatos Drive</span>
+                      <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                    </motion.a>
+                  </motion.div>
+
+                  {/* Banner 2: Mesa de Servicio CSC (GLPI) con Instructivo */}
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 }}
+                    className="overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 p-5 md:p-6 rounded-2xl shadow-md relative text-white group flex flex-col justify-between border border-indigo-800/40"
+                  >
+                    <div className="absolute top-0 right-0 w-60 h-60 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-sky-500/10 rounded-full blur-xl pointer-events-none"></div>
+
+                    <div className="relative z-10 space-y-2 mb-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/30 backdrop-blur-md rounded-full text-[9px] font-black uppercase tracking-widest text-sky-300 border border-indigo-400/30">
+                          <span className="w-1.5 h-1.5 bg-sky-400 rounded-full animate-pulse shadow-sm"></span>
+                          PLATAFORMA CSC
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-300">medicos.cra80 / VIVA2026</span>
+                      </div>
+                      <h3 className="text-lg md:text-xl font-black heading-font tracking-tight uppercase text-white">
+                        Mesa de Servicio (GLPI)
+                      </h3>
+                      <p className="text-slate-300 text-xs font-semibold leading-relaxed">
+                        Radica tickets técnicos, reportes de sistema, o solicitudes de soporte con asignación automática a <strong className="text-sky-300">CARRERA 80</strong>.
+                      </p>
+                    </div>
+
+                    <div className="relative z-10 flex flex-wrap gap-2 pt-1">
                       <motion.a
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        href="https://drive.google.com/drive/folders/16MD1-slKi22meenPeQNiSlo7_2I5ZtPP?usp=sharing"
+                        href="https://orbit.csc1a.com/glpi/index.php?noAUTO=1"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="shrink-0 bg-white hover:bg-emerald-50 text-emerald-800 font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-xl shadow-md flex items-center justify-center gap-2 self-start lg:self-center"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-wider px-4 py-3 rounded-xl shadow-md flex items-center justify-center gap-2 transition-all"
                       >
-                        <span>Abrir Formatos</span>
+                        <span>Abrir Mesa GLPI</span>
                         <svg className="w-4 h-4 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
                         </svg>
                       </motion.a>
+
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={() => setShowGlpiGuide(true)}
+                        className="bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider px-4 py-3 rounded-xl border border-white/20 flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                      >
+                        <span>📖 Ver Instructivo</span>
+                      </motion.button>
                     </div>
                   </motion.div>
-                )}
+                </div>
 
                 {/* Subtitle for work links */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-black text-slate-800 uppercase heading-font tracking-tight">
-                    Enlaces de <span className="text-emerald-600">Trabajo</span>
-                  </h3>
-                  <p className="text-xs text-slate-500 font-bold">Toca cualquier acceso para redirigirte a la plataforma correspondiente.</p>
+                <div className="mb-6 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-800 uppercase heading-font tracking-tight">
+                      Enlaces de <span className="text-emerald-600">Trabajo</span>
+                    </h3>
+                    <p className="text-xs text-slate-500 font-bold">Toca cualquier acceso para redirigirte a la plataforma correspondiente.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowGlpiGuide(true)}
+                    className="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors hidden sm:flex items-center gap-1.5"
+                  >
+                    <span>📖 Guía Mesa de Servicio</span>
+                  </button>
                 </div>
 
                 <div className="pb-24">
@@ -337,6 +626,7 @@ const App = () => {
                       >
                         {displayedLinks.map((link, idx) => {
                           const isSpecial = link.id === 'reporte_inseguro';
+                          const isGlpi = link.id === 'glpi';
                           return (
                             <motion.a
                               key={link.id}
@@ -350,7 +640,9 @@ const App = () => {
                               exit={{ opacity: 0, scale: 0.8 }}
                               transition={{ delay: idx * 0.04, type: 'spring', damping: 22 }}
                               whileHover={{ y: -5, boxShadow: "0 15px 30px -8px rgba(16, 185, 129, 0.12)" }}
-                              className="group relative overflow-hidden bg-white border border-slate-200 p-4 md:p-5 rounded-[1.25rem] shadow-sm hover:border-emerald-200 flex flex-col min-h-[170px] cursor-pointer"
+                              className={`group relative overflow-hidden bg-white border p-4 md:p-5 rounded-[1.25rem] shadow-sm flex flex-col min-h-[170px] cursor-pointer transition-all ${
+                                isGlpi ? 'border-indigo-300 ring-1 ring-indigo-200 hover:border-indigo-400' : 'border-slate-200 hover:border-emerald-200'
+                              }`}
                             >
                               <div className={`absolute inset-y-0 left-0 w-1.5 ${getCatBg(link.category)} opacity-10 group-hover:opacity-100 transition-all duration-500`}></div>
                               <div className="flex items-start justify-between mb-3">
@@ -362,11 +654,35 @@ const App = () => {
                                 </div>
                               </div>
                               <div className="space-y-1.5 flex-1">
-                                <h4 className="text-xs md:text-sm font-black text-slate-800 tracking-tight group-hover:text-emerald-600 uppercase transition-colors line-clamp-2">
-                                  {link.name}
-                                </h4>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h4 className={`text-xs md:text-sm font-black tracking-tight uppercase transition-colors line-clamp-2 ${
+                                    isGlpi ? 'text-indigo-900 group-hover:text-indigo-600' : 'text-slate-800 group-hover:text-emerald-600'
+                                  }`}>
+                                    {link.name}
+                                  </h4>
+                                  {isGlpi && (
+                                    <span className="px-1.5 py-0.5 bg-indigo-50 text-indigo-700 text-[8px] font-black uppercase rounded border border-indigo-200">
+                                      CSC
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-[10px] md:text-xs text-slate-500 leading-relaxed font-semibold line-clamp-3">{link.description}</p>
                               </div>
+
+                              {isGlpi && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setShowGlpiGuide(true);
+                                  }}
+                                  className="mt-2.5 mb-1 text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 hover:bg-indigo-100 py-1.5 px-2 rounded-lg border border-indigo-200 flex items-center justify-center gap-1 w-full transition-colors"
+                                >
+                                  <span>📖 Instructivo</span>
+                                </button>
+                              )}
+
                               <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
                                 <span className={`text-[7px] md:text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${getCatPillClass(link.category)} transition-all duration-300`}>
                                   {link.category}
@@ -382,23 +698,9 @@ const App = () => {
                         })}
                       </motion.div>
                     ) : (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-[3rem] border-4 border-dashed border-slate-200"
-                      >
-                        <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <svg className="w-8 h-8 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        </div>
-                        <h3 className="text-2xl font-black text-slate-800 mb-1">Sin coincidencias</h3>
-                        <p className="text-slate-400 font-semibold text-sm">Prueba buscando con palabras clave como "everest", "athenea" o "formato".</p>
-                        <button
-                          onClick={() => handleCategoryClick(null)}
-                          className="mt-6 text-emerald-600 font-black text-xs uppercase tracking-widest hover:underline"
-                        >
-                          Ver todos los enlaces
-                        </button>
-                      </motion.div>
+                      <div className="text-center py-16 bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-slate-200">
+                        <p className="text-slate-400 font-semibold text-sm">No hay enlaces disponibles en este momento.</p>
+                      </div>
                     )}
                   </AnimatePresence>
                 </div>
@@ -425,21 +727,58 @@ const App = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {[
-                    { name: 'MESA DE SERVICIO', user: 'MEDICOS.CRA80', pass: 'VIVA2023', icon: '🖥️', color: 'from-emerald-500 to-teal-700' },
+                    { 
+                      name: 'MESA DE SERVICIO (CSC - GLPI)', 
+                      user: 'medicos.cra80', 
+                      pass: 'VIVA2026', 
+                      icon: '🖥️', 
+                      color: 'from-indigo-600 to-blue-800',
+                      url: 'https://orbit.csc1a.com/glpi/index.php?noAUTO=1',
+                      isGlpi: true 
+                    },
                     { name: 'ATHENEA', user: 'CONSULTAMED', pass: 'Viva1a*md04', icon: '📋', color: 'from-emerald-500 to-sky-700' },
                     { name: 'ANNARLYTICS', user: 'CONSULTA', pass: '123456', icon: '🧪', color: 'from-teal-600 to-indigo-700' },
                     { name: 'LUMIER', user: 'PREMIUM', pass: '123456', icon: '🩻', color: 'from-slate-600 to-slate-800' }
                   ].map(cred => (
                     <div key={cred.name} className="relative overflow-hidden bg-white rounded-[1.5rem] p-5 md:p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all group">
                       <div className={`absolute top-0 left-0 w-2 h-full bg-gradient-to-b ${cred.color}`}></div>
-                      <div className="flex items-center gap-4 mb-4">
-                        <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{cred.icon}</span>
-                        <span className="text-base font-black text-slate-800 tracking-tight uppercase">{cred.name}</span>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl filter grayscale group-hover:grayscale-0 transition-all">{cred.icon}</span>
+                          <span className="text-base font-black text-slate-800 tracking-tight uppercase">{cred.name}</span>
+                        </div>
+                        {cred.isGlpi && (
+                          <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[9px] font-black uppercase rounded-md border border-indigo-100">
+                            NUEVA CLAVE
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-3">
                         <CredentialItem label="Usuario" value={cred.user} />
                         <CredentialItem label="Contraseña" value={cred.pass} />
                       </div>
+                      {cred.isGlpi && (
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
+                          <a
+                            href={cred.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 min-w-[120px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-2 px-3 rounded-xl text-center shadow-sm transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <span>Abrir Plataforma</span>
+                            <svg className="w-3 h-3 stroke-current fill-none" viewBox="0 0 24 24" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => setShowGlpiGuide(true)}
+                            className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+                          >
+                            📖 Instructivo
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -509,14 +848,24 @@ const App = () => {
                     <span>Soporte WhatsApp</span>
                   </motion.a>
 
-                  <a
-                    href="http://mesadeservicios.viva1a.com.co/glpi/index.php"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-6 text-white/60 hover:text-white font-black text-xs uppercase tracking-[0.2em] transition-colors"
-                  >
-                    Abrir Ticket GLPI Directo
-                  </a>
+                  <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
+                    <a
+                      href="https://orbit.csc1a.com/glpi/index.php?noAUTO=1"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white/80 hover:text-white font-black text-xs uppercase tracking-[0.15em] transition-colors underline"
+                    >
+                      Abrir Plataforma GLPI CSC
+                    </a>
+                    <span className="text-white/40 hidden sm:inline">•</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowGlpiGuide(true)}
+                      className="text-white/80 hover:text-white font-black text-xs uppercase tracking-[0.15em] transition-colors underline"
+                    >
+                      Ver Instructivo Radicación
+                    </button>
+                  </div>
                 </motion.div>
               </motion.div>
             )}
@@ -622,6 +971,16 @@ const App = () => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Mesa de Servicio (GLPI CSC) Instructivo Modal */}
+      <AnimatePresence>
+        {showGlpiGuide && (
+          <GlpiInstructivoModal
+            isOpen={showGlpiGuide}
+            onClose={() => setShowGlpiGuide(false)}
+          />
         )}
       </AnimatePresence>
     </div>
